@@ -12,8 +12,9 @@ async def tool_calls(request: Request):
         call = await request.json()
     except ValueError:
         call = None
-
-    result = handle_tool_call(call)
+    user_id = request.headers.get("X-User-Id")
+    result = handle_tool_call(call,user_id)
+    
     write_audit({
         "event": "tool_call",
         "call_id": result.get("call_id"),
@@ -23,6 +24,7 @@ async def tool_calls(request: Request):
         "reason": result.get("reason"),
         "approval_id": result.get("approval_id"),
         "execution_result": result.get("result"),
+        "user_id": user_id,
     })
 
     return result
@@ -35,8 +37,8 @@ async def approval_decision(approval_id: str, request: Request):
         body = None
 
     action = body.get("action") if isinstance(body, dict) else None
-    result = handle_approval_decision(approval_id, action)
-
+    user_id = request.headers.get("X-User-Id")
+    result = handle_approval_decision(approval_id, action, user_id, body)
     write_audit({
         "event": "approval_decision",
         "approval_id": approval_id,
@@ -45,6 +47,7 @@ async def approval_decision(approval_id: str, request: Request):
         "status": result.get("status"),
         "reason": result.get("reason"),
         "execution_result": result.get("result"),
+        "user_id": user_id,
     })
 
     return result

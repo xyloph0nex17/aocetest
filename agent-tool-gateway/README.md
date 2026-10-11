@@ -56,12 +56,17 @@ Client 向 `POST /tool-calls` 提交包含 `call_id`、`tool_name` 和 `argument
 ## 任务书问题
 
 ### Client 和 Gateway Server 分别负责什么？
+Client负责发送请求，处理结果
+Gateway Server负责处理请求
 
 ### 为什么 Agent 输出不能被视为用户授权？
+Agent有可能会做错，做出并非用户所希望的行为
 
 ### 为什么确认必须绑定具体参数，而不能只绑定工具名称？
+因为可能调用工具是合法的，但被篡改了工具的参数导致最终调用不合法
 
 ### 为什么工具的风险策略必须保存在 Gateway，而不能由 Agent 提交？
+
 
 ### 如果一次工具执行超时，系统如何判断它能否安全重试？
 

@@ -5,8 +5,15 @@ from server.gateway.approvals import take_pending
 from server.tools.email import send_email
 from server.tools.notes import delete_note
 
-def handle_tool_call(call):
+def handle_tool_call(call,user_id: str | None):
     call_id = call.get("call_id") if isinstance(call, dict) else None
+    if not isinstance(user_id, str) or not user_id.strip():
+        return {
+            "call_id": call_id,
+            "decision": "deny",
+            "status": "denied",
+            "reason": "缺少用户身份",
+        }
     decision, reason = validate_call(call)
 
     if decision == "deny":
@@ -18,7 +25,7 @@ def handle_tool_call(call):
         }
 
     if decision == "require_approval":
-        approval_id = create_pending(call)
+        approval_id = create_pending(call,user_id)
         return {
             "call_id": call_id,
             "decision": "require_approval",
@@ -27,7 +34,6 @@ def handle_tool_call(call):
             "approval_id": approval_id,
         }
 
-    # 当前只有 read_note 被允许自动执行。
     if call["tool_name"] != "read_note":
         return {
             "call_id": call_id,
@@ -53,13 +59,18 @@ def handle_tool_call(call):
         "result": {"content": content},
     }
 
-def handle_approval_decision(approval_id: str, action: str):
+def handle_approval_decision(
+    approval_id: str,
+    action: str,
+    user_id: str | None,
+    confirmation: dict | None = None,
+):
     if action not in ("approve", "deny"):
         return {"status": "denied", "reason": "action 必须是 approve 或 deny"}
 
-    record = take_pending(approval_id)
+    record, error = take_pending(approval_id, user_id, confirmation)
     if record is None:
-        return {"status": "denied", "reason": "确认不存在或已经使用"}
+        return {"status": "denied", "reason": error}
 
     if action == "deny":
         return {
