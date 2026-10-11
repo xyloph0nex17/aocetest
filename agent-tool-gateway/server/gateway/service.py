@@ -3,6 +3,8 @@ from server.tools.notes import read_note
 from server.gateway.approvals import create_pending
 from server.gateway.approvals import take_pending
 from server.tools.email import send_email
+from server.tools.notes import delete_note
+
 def handle_tool_call(call):
     call_id = call.get("call_id") if isinstance(call, dict) else None
     decision, reason = validate_call(call)
@@ -66,16 +68,18 @@ def handle_approval_decision(approval_id: str, action: str):
             "reason": "用户拒绝",
         }
 
-    if record["tool_name"] != "send_email":
-        return {
-            "call_id": record["call_id"],
-            "status": "failed",
-            "reason": "该工具的确认执行尚未实现",
-        }
-
     try:
-        result = send_email(**record["arguments"])
-    except OSError as exc:
+        if record["tool_name"] == "send_email":
+            result = send_email(**record["arguments"])
+        elif record["tool_name"] == "delete_note":
+            result = delete_note(record["arguments"]["path"])
+        else:
+            return {
+                "call_id": record["call_id"],
+                "status": "failed",
+                "reason": "未知的待确认工具",
+            }
+    except (OSError, ValueError) as exc:
         return {
             "call_id": record["call_id"],
             "status": "failed",
