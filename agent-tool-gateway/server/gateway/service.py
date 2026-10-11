@@ -66,17 +66,24 @@ def handle_approval_decision(
     confirmation: dict | None = None,
 ):
     if action not in ("approve", "deny"):
-        return {"status": "denied", "reason": "action 必须是 approve 或 deny"}
+        return {
+            "decision": "deny",
+            "status": "denied",
+            "reason": "action 必须是 approve 或 deny",
+        }
 
     record, error = take_pending(approval_id, user_id, confirmation)
+    
     if record is None:
-        return {"status": "denied", "reason": error}
+        return {"decision": "deny", "status": "denied", "reason": error}
 
     if action == "deny":
         return {
             "call_id": record["call_id"],
+            "decision": "deny",
             "status": "denied",
             "reason": "用户拒绝",
+            "tool_name": record["tool_name"],
         }
 
     try:
@@ -87,18 +94,24 @@ def handle_approval_decision(
         else:
             return {
                 "call_id": record["call_id"],
+                "decision": "deny",
                 "status": "failed",
                 "reason": "未知的待确认工具",
+                "tool_name": record["tool_name"],
             }
     except (OSError, ValueError) as exc:
         return {
             "call_id": record["call_id"],
+            "decision": "allow",
             "status": "failed",
             "reason": str(exc),
+            "tool_name": record["tool_name"],
         }
 
     return {
         "call_id": record["call_id"],
+        "decision": "allow",
         "status": "executed",
         "result": result,
+        "tool_name": record["tool_name"],
     }

@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 
 from server.gateway.service import handle_tool_call
 from server.gateway.service import handle_approval_decision
+from server.gateway.approvals import get_approval_audit_context
 from server.gateway.audit import write_audit
 app = FastAPI()
 
@@ -38,16 +39,19 @@ async def approval_decision(approval_id: str, request: Request):
 
     action = body.get("action") if isinstance(body, dict) else None
     user_id = request.headers.get("X-User-Id")
+    audit_context = get_approval_audit_context(approval_id)
     result = handle_approval_decision(approval_id, action, user_id, body)
     write_audit({
         "event": "approval_decision",
         "approval_id": approval_id,
         "action": action,
-        "call_id": result.get("call_id"),
+        "decision": result.get("decision"),
         "status": result.get("status"),
         "reason": result.get("reason"),
         "execution_result": result.get("result"),
         "user_id": user_id,
+        "call_id": audit_context.get("call_id") if audit_context else None,
+        "tool_name": audit_context.get("tool_name") if audit_context else None,
     })
 
     return result

@@ -1,0 +1,12 @@
+2026秋招Web_Agent组熬测题.pdf
+
+# Local Python environment and generated caches
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Simulated sent mail is generated at runtime
+agent-tool-gateway/sandbox/outbox/*.json
+
+agent-tool-gateway/sandbox/audit.jsonl

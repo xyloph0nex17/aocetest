@@ -22,12 +22,14 @@ def create_pending(call: dict,user_id:str) -> str:
     arguments = deepcopy(call["arguments"])
     with _APPROVALS_LOCK:
         PENDING_APPROVALS[approval_id] = {
+            "approval_id": approval_id,
             "call_id": call["call_id"],
             "tool_name": call["tool_name"],
             "arguments": arguments,
             "argument_hash": hash_arguments(arguments),
             "user_id": user_id,
             "expires_at": datetime.now(timezone.utc) + APPROVAL_TTL,
+            "used": False,
         }
     return approval_id
 
@@ -44,6 +46,8 @@ def take_pending(
 
         if not user_id or record["user_id"] != user_id:
             return None, "确认者不是原用户"
+        if record["used"]:
+            return None, "确认已经使用"
         if datetime.now(timezone.utc) >= record["expires_at"]:
             PENDING_APPROVALS.pop(approval_id)
             return None, "确认已过期"
@@ -65,4 +69,15 @@ def take_pending(
 
         if hash_arguments(arguments) != record["argument_hash"]:
             return None, "确认参数与待确认记录不一致"
-        return PENDING_APPROVALS.pop(approval_id), None
+        record["used"] = True
+        return deepcopy(record), None
+
+def get_approval_audit_context(approval_id: str) -> dict | None:
+    with _APPROVALS_LOCK:
+        record = PENDING_APPROVALS.get(approval_id)
+        if record is None:
+            return None
+        return {
+            "call_id": record["call_id"],
+            "tool_name": record["tool_name"],
+        }
