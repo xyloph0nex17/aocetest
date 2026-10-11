@@ -1,0 +1,9 @@
+{
+  "call_id": "call_email_002",
+  "tool_name": "send_email",
+  "arguments": {
+    "to": "mentor@example.com",
+    "subject": "Test",
+    "body": "Hello"
+  }
+}
