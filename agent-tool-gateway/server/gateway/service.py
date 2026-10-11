@@ -4,7 +4,7 @@ from server.gateway.approvals import create_pending
 from server.gateway.approvals import take_pending
 from server.tools.email import send_email
 from server.tools.notes import delete_note
-
+from server.tools.webpage import read_webpage
 def handle_tool_call(call,user_id: str | None):
     call_id = call.get("call_id") if isinstance(call, dict) else None
     if not isinstance(user_id, str) or not user_id.strip():
@@ -34,7 +34,7 @@ def handle_tool_call(call,user_id: str | None):
             "approval_id": approval_id,
         }
 
-    if call["tool_name"] != "read_note":
+    if call["tool_name"] not in {"read_note", "read_webpage"}:
         return {
             "call_id": call_id,
             "decision": "deny",
@@ -43,7 +43,10 @@ def handle_tool_call(call,user_id: str | None):
         }
 
     try:
-        content = read_note(call["arguments"]["path"])
+        if call["tool_name"] == "read_note":
+            content = read_note(call["arguments"]["path"])
+        else:
+            content = read_webpage(call["arguments"]["url"])
     except (OSError, ValueError) as exc:
         return {
             "call_id": call_id,

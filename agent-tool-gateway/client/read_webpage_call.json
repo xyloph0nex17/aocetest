@@ -1,0 +1,7 @@
+{
+  "call_id": "call_webpage_001",
+  "tool_name": "read_webpage",
+  "arguments": {
+    "url": "https://example.test/injected-page"
+  }
+}

@@ -30,4 +30,13 @@ TOOLS = {
             "additionalProperties": False,
         },
     },
+    "read_webpage": {
+        "decision": "allow",
+        "input_schema": {
+            "type": "object",
+            "properties": {"url": {"type": "string"}},
+            "required": ["url"],
+            "additionalProperties": False,
+        },
+    },
 }

